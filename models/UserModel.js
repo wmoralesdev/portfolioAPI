@@ -21,7 +21,8 @@ var UserSchema = Schema({
         required: true
     },
     phone: "String",
-    dob: "Date"
+    dob: "Date",
+    recoveryToken: "String"
 })
 
 module.exports = model("User", UserSchema)
