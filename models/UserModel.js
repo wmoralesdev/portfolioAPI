@@ -22,7 +22,8 @@ var UserSchema = Schema({
     },
     phone: "String",
     dob: "Date",
-    recoveryToken: "String"
+    recoveryToken: "String",
+    profileImg: "String"
 })
 
 module.exports = model("User", UserSchema)

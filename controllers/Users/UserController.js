@@ -49,7 +49,8 @@ var UserController = {
                 email: req.body.email,
                 password: hashedPassword,
                 phone: req.body.phone,
-                dob: req.body.dob
+                dob: req.body.dob,
+                profileImg: req.file.location
             })
 
             await newUser.save()
@@ -150,7 +151,31 @@ var UserController = {
     },
 
     requestPasswordHandler: async(req, res) => {
+        try {
+            const token = req.header('Authorize')
 
+            if(!token)
+                throw {error: true, message: "Access denied"}
+
+            const verified = jwt.verify(token, process.env.TOKEN_RESET_KEY)
+
+            if(!verified)
+                throw {error: true, message: "Invalid token"}
+            
+            var user = await User.findOne({_id: verified._id})
+
+            user.password = await bcrypt.hash(req.body.newPassword, parseInt(process.env.SALT))
+            user.recoveryToken = null
+
+            await User.findOneAndUpdate({_id: user._id},
+                {password: user.password, recoveryToken: user.recoveryToken})
+
+            return res.status(200).json({error: false, message: "Updated password, try login in"})
+        }
+        catch(err) {
+            console.log(err);
+            return res.status(500).json(err)
+        }
     },
 
     getUsers: async(req, res) => {
