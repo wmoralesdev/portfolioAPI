@@ -1,25 +1,40 @@
-const aws = require('aws-sdk'), multer = require('multer'), multerS3 = require('multer-s3')
+const aws = require('aws-sdk'), multer = require('multer')
 
-aws.config.update({
-    secretAccesKey: process.env.AWS_KEY,
-    secretKeyId: process.env.AWS_KEY_ID,
-    region: process.env.AWS_REGION
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_KEY_ID,
+    secretAccessKey: process.env.AWS_KEY
 })
 
-const s3 = new aws.S3()
+const storage = multer.memoryStorage({
+    destination: (req, file, cb) => {
+        cb(null, '')
+    }
+})
 
-module.exports = {
-    upload: multer({
-        storage: multerS3({
-            s3: s3,
-            acl: 'public-read',
-            bucket: process.env.AWS_BUCKET,
-            key: function(req, file, cb) {
-                cb(null, 'profileImg/' + new Date().toISOString() + '_' + file.originalname)
+const uploaderObject = {
+    uploadMulter: multer({storage}),
+    uploaderMethod: function(file, location) {
+        console.log('Ejecutando metodo');
+        console.log(file)
+        try{
+            const params = {
+                Bucket: process.env.AWS_BUCKET,
+                Key: `${location}/${new Date().toISOString()}_${file.originalname}`,
+                Body: file.buffer,
+                ACL: 'public-read'
             }
-        }),
-        limits: {
-            fileSize: 1024 * 1024 * 5
+    
+            s3.upload(params, function(error, data) {
+                if(error)
+                    console.log(`Error: ${JSON.stringify(error)}`)
+                else
+                    console.log(`Data: ${JSON.stringify(data)}`)
+            })
         }
-    })
+        catch(err) {
+            console.log(err)
+        }
+    }
 }
+
+module.exports = uploaderObject

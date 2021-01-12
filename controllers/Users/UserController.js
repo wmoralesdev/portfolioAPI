@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 const mailer = require('../Utilities/SendgridMailer')
 const User = require('../../models/UserModel')
 const { registerValidator, loginValidator, updateValidator } = require('./Validator')
+const { uploaderMethod } = require('../Utilities/ImageUploader')
 
 var UserController = {
     login: async(req, res) => {
@@ -24,17 +25,18 @@ var UserController = {
                 throw {error: true, message: "Wrong password"}
 
             const token = jwt.sign({_id: user._id}, process.env.TOKEN_KEY)
-            return res.status(200).json({token: token})
+            return res.status(200).json({error: false, message: "Success", token: token})
         }
         catch(err) {
             console.log(err);
-            return res.status(400).json(err.details != null ? err.details[0].message : err)
+            return res.status(400).json({error: true, message: err.details != null ? err.details[0].message : err})
         }
     },
 
     register: async(req, res) => {
         try {
-            await registerValidator(req.body)
+            uploaderMethod(req.file, 'users')
+            // await registerValidator(req.body)
             
             const notUnique = await User.find({ $or: [{username: req.body.username}, {email: req.body.email}]})
 
@@ -57,7 +59,8 @@ var UserController = {
             return res.status(201).json({error: false, message: "Registered/Created"})
         }
         catch(err) {
-            return res.status(400).json(err.details != null ? err.details[0].message : err)
+            console.log(err);
+            return res.status(400).json({error: true, message: err.details != null ? err.details[0].message : err})
         }
     },
     
